@@ -76,7 +76,7 @@
   .vazio { text-align: center; color: var(--suave); padding: 20px 0; }
   .valor { font-weight: 800; color: var(--vermelho); white-space: nowrap; }
 
-  /* ===== GRADES DE BOTÕES (clientes e produtos) ===== */
+  /* ===== GRADE DE BOTÕES (clientes) ===== */
   .grade { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
   .opcao {
     background: var(--cartao); border: 2px solid var(--borda); border-radius: var(--raio);
@@ -112,6 +112,38 @@
   .pessoa .nome { font-weight: 700; font-size: 22px; }
   .pessoa .empresa { color: var(--suave); font-size: 17px; }
   .pessoa[open] summary { margin-bottom: 8px; }
+
+  /* ===== TECLADO DE VALOR ===== */
+  .visor {
+    text-align: center; font-size: 42px; font-weight: 800; padding: 6px 12px 8px; margin-bottom: 10px; line-height: 1.2;
+    background: #fff; border: 3px solid var(--marca); border-radius: var(--raio); color: var(--texto);
+  }
+  .visor small { display: block; font-size: 16px; font-weight: 600; color: var(--suave); }
+  #visor.vazio-valor { color: #cfc4b8; }
+  .teclado { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .tecla {
+    font-size: 30px; font-weight: 700; min-height: 58px; cursor: pointer; color: var(--texto);
+    background: var(--cartao); border: 2px solid var(--borda); border-radius: var(--raio);
+  }
+  .tecla:active { background: var(--marca-claro); border-color: var(--marca); }
+  .tecla.apagar { color: var(--vermelho); font-size: 26px; }
+  #botao-anotar { margin-top: 10px; }
+  #botao-anotar:disabled { opacity: .45; }
+  .cliente-escolhido { padding: 10px 14px; margin-bottom: 10px; }
+  .cliente-escolhido .nome { font-size: 22px; }
+
+  /* Celulares de tela baixa: tudo um pouco mais compacto para o botão Anotar caber */
+  @media (max-height: 700px) {
+    header { padding: 8px 16px; }
+    header h1 { font-size: 21px; }
+    header .hoje { font-size: 15px; margin-top: 0; }
+    main { padding-top: 10px; }
+    .tecla { min-height: 48px; font-size: 26px; }
+    .visor { font-size: 34px; padding: 4px 12px; }
+    #botao-anotar { padding: 13px; }
+    nav button { padding: 8px 4px; font-size: 16px; }
+    nav button span { font-size: 22px; }
+  }
 
   /* ===== FAIXA DO DIA (aba Anotar) ===== */
   .faixa-data {
@@ -225,17 +257,6 @@
       <button class="botao cinza" type="button" id="c-cancelar" style="display:none">Cancelar</button>
     </div>
     <div class="cartao" id="lista-clientes"></div>
-
-    <h2>🍽️ Produtos</h2>
-    <div class="cartao" id="form-produto">
-      <label for="p-nome">Produto</label>
-      <input id="p-nome" autocomplete="off" placeholder="Ex.: Café" required>
-      <label for="p-preco">Preço (R$)</label>
-      <input id="p-preco" inputmode="decimal" placeholder="0,00" required>
-      <button class="botao" type="button" id="p-botao">Cadastrar produto</button>
-      <button class="botao cinza" type="button" id="p-cancelar" style="display:none">Cancelar</button>
-    </div>
-    <div class="cartao" id="lista-produtos"></div>
 
     <h2>💾 Backup</h2>
     <div class="cartao" id="backup"></div>
@@ -374,7 +395,7 @@ function irPara(aba) {
 document.querySelectorAll("nav button").forEach(b => b.onclick = () => irPara(b.dataset.aba));
 
 /* =========================================================
-   ABA ANOTAR — toca no cliente, toca no produto
+   ABA ANOTAR — toca no cliente, digita o valor
    ========================================================= */
 let clienteSel = null;
 let busca = "";
@@ -415,10 +436,10 @@ function voltarHoje() { diaSel = hoje(); desenharAnotar(); }
 function desenharAnotar() {
   const el = $("aba-anotar");
 
-  if (!D.clientes.length || !D.produtos.length) {
+  if (!D.clientes.length) {
     el.innerHTML = `
       <div class="cartao vazio">
-        Para começar, cadastre os <b>clientes</b> e os <b>produtos</b>.
+        Para começar, cadastre os <b>clientes</b>.
         <button class="botao" onclick="irPara('cadastro')">Ir para Cadastro</button>
       </div>`;
     return;
@@ -447,69 +468,98 @@ function desenharAnotar() {
     return;
   }
 
-  // Passo 2: escolher o produto
+  // Passo 2: digitar o valor
   const c = cliente(clienteSel);
   const doDia = D.anotacoes.filter(a => a.clienteId === c.id && a.data === diaSel).reverse();
   const tituloDia = diaSel === hoje() ? "hoje" : `em ${curto(diaSel)}`;
   const deve = pendentesDe(c.id).reduce((s, a) => s + a.valor, 0);
 
-  el.innerHTML = faixaDia() + `
+  el.innerHTML = (diaSel !== hoje() ? faixaDia() : "") + `
     <div class="cartao cliente-escolhido">
       <div>
         <div class="nome">${esc(c.nome)}</div>
-        ${c.empresa ? `<div style="color:var(--suave)">${esc(c.empresa)}</div>` : ""}
-        <div>Deve: <span class="valor">${reais(deve)}</span></div>
+        <div style="font-size:17px">${c.empresa ? `${esc(c.empresa)} · ` : ""}Deve: <span class="valor">${reais(deve)}</span></div>
       </div>
       <button class="botao pequeno contorno" onclick="trocarCliente()">Trocar</button>
     </div>
 
-    <h2>2. O que consumiu? <small style="font-weight:400;color:var(--suave)">(toque para anotar)</small></h2>
-    <div class="grade">
-      ${[...D.produtos].sort(porNome).map(p => `
-        <button class="opcao" onclick="anotar(${p.id})">
-          ${esc(p.nome)}<span class="preco">${reais(p.preco)}</span>
-        </button>`).join("")}
-      <button class="opcao outro" onclick="anotarOutro()">➕ Outro<span class="preco">digitar valor</span></button>
+    <div class="visor"><small>Quanto gastou?</small><div id="visor"></div></div>
+    <div class="teclado">
+      ${["1","2","3","4","5","6","7","8","9",",","0","⌫"].map(t =>
+        `<button class="tecla ${t === "⌫" ? "apagar" : ""}" onclick="tecla('${t}')">${t}</button>`).join("")}
     </div>
-
-    <button class="botao verde" onclick="trocarCliente()">✔ Pronto</button>
+    <button class="botao verde" id="botao-anotar" onclick="confirmarValor()">✔ Anotar</button>
 
     <h2>Anotado ${tituloDia} para ${esc(c.nome)}</h2>
     <div class="cartao">
       ${doDia.length ? doDia.map(a => `
         <div class="item">
-          <div>${esc(a.produto)}${a.pago ? "<small>pago ✔</small>" : ""}</div>
+          <div>${rotulo(a)}${a.pago ? "<small>pago ✔</small>" : ""}</div>
           <div class="acoes">
             <span class="valor">${reais(a.valor)}</span>
             <button class="botao pequeno cinza" onclick="apagarAnotacao(${a.id})">✕</button>
           </div>
         </div>`).join("") : `<div class="vazio">Nada anotado ${tituloDia}.</div>`}
     </div>`;
+  atualizarVisor();
 }
 
-function escolherCliente(id) { clienteSel = id; busca = ""; desenharAnotar(); window.scrollTo(0, 0); }
+// Teclado de valor
+let valorTxt = "";
+const valorDigitado = () => lerValor(valorTxt || "0") || 0;
+function tecla(t) {
+  if (t === "⌫") valorTxt = valorTxt.slice(0, -1);
+  else if (t === ",") { if (!valorTxt.includes(",")) valorTxt = (valorTxt || "0") + ","; }
+  else {
+    const [inteiro, dec] = valorTxt.split(",");
+    if (dec !== undefined && dec.length >= 2) return;              // no máximo centavos
+    if (dec === undefined && inteiro.length >= 5) return;          // até 99.999
+    valorTxt = valorTxt === "0" ? t : valorTxt + t;
+  }
+  atualizarVisor();
+}
+function atualizarVisor() {
+  const v = $("visor"); if (!v) return;
+  v.textContent = "R$ " + (valorTxt || "0");
+  v.classList.toggle("vazio-valor", !valorTxt);
+  const b = $("botao-anotar"), n = valorDigitado();
+  b.disabled = !(n > 0);
+  b.textContent = n > 0 ? `✔ Anotar ${reais(n)}` : "✔ Anotar";
+}
+function confirmarValor() {
+  const n = valorDigitado();
+  if (!(n > 0)) return;
+  registrar(n);
+  valorTxt = ""; clienteSel = null;
+  desenharAnotar(); window.scrollTo(0, 0);
+}
+// Teclado do computador também funciona (números, vírgula, apagar, Enter)
+document.addEventListener("keydown", e => {
+  if (!clienteSel || !$("aba-anotar").classList.contains("ativa")) return;
+  if ($("janela-fundo").style.display === "flex" || e.target.tagName === "INPUT") return;
+  if (/^[0-9]$/.test(e.key)) tecla(e.key);
+  else if (e.key === "," || e.key === ".") tecla(",");
+  else if (e.key === "Backspace") tecla("⌫");
+  else if (e.key === "Enter") confirmarValor();
+  else return;
+  e.preventDefault();
+});
+// Nome de cada anotação: hora (novas), produto (antigas) ou "Consumo"
+const rotulo = a => a.hora ? `Consumo às ${a.hora}` : esc(a.produto || "Consumo");
+
+function escolherCliente(id) { clienteSel = id; busca = ""; valorTxt = ""; desenharAnotar(); window.scrollTo(0, 0); }
 function trocarCliente() { clienteSel = null; desenharAnotar(); window.scrollTo(0, 0); }
 
-function registrar(produto, valor) {
-  const a = { id: novoId(), clienteId: clienteSel, produto, valor, data: diaSel, pago: false };
+function registrar(valor) {
+  const hora = diaSel === hoje() ? new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) : "";
+  const a = { id: novoId(), clienteId: clienteSel, produto: "", valor, data: diaSel, hora, pago: false };
   D.anotacoes.push(a);
   salvar();
-  mostrarAviso(`✔ ${produto} — ${reais(valor)}${diaSel !== hoje() ? ` (${curto(diaSel)})` : ""}`, () => {
+  mostrarAviso(`✔ ${cliente(clienteSel).nome} — ${reais(valor)}${diaSel !== hoje() ? ` (${curto(diaSel)})` : ""}`, () => {
     D.anotacoes = D.anotacoes.filter(x => x.id !== a.id);
     salvar(); desenhar();
   });
   desenhar();
-}
-function anotar(produtoId) {
-  const p = D.produtos.find(x => x.id === produtoId);
-  registrar(p.nome, p.preco);
-}
-async function anotarOutro() {
-  const nome = await pedirTexto("O que consumiu?");
-  if (!nome || !nome.trim()) return;
-  const valor = lerValor(await pedirTexto("Valor (R$):", "decimal") || "");
-  if (!(valor > 0)) { avisar("Valor inválido."); return; }
-  registrar(nome.trim(), valor);
 }
 async function apagarAnotacao(id) {
   if (!await perguntar("Apagar esta anotação?")) return;
@@ -532,9 +582,9 @@ $("aviso-desfazer").onclick = () => {
 };
 
 /* =========================================================
-   ABA CADASTRO — clientes e produtos
+   ABA CADASTRO — clientes
    ========================================================= */
-let editCliente = null, editProduto = null;
+let editCliente = null;
 
 $("c-botao").onclick = () => {
   if (!$("c-nome").value.trim()) { avisar("Digite o nome do cliente."); return; }
@@ -566,32 +616,6 @@ async function apagarCliente(id) {
   salvar(); desenhar();
 }
 
-$("p-botao").onclick = () => {
-  if (!$("p-nome").value.trim()) { avisar("Digite o nome do produto."); return; }
-  const preco = lerValor($("p-preco").value);
-  if (!(preco > 0)) { avisar("Confira o preço."); return; }
-  const dados = { nome: $("p-nome").value.trim(), preco };
-  if (editProduto) Object.assign(D.produtos.find(p => p.id === editProduto), dados);
-  else D.produtos.push({ id: novoId(), ...dados });
-  salvar(); limparProduto(); desenhar();
-};
-function editarProduto(id) {
-  const p = D.produtos.find(x => x.id === id); editProduto = id;
-  $("p-nome").value = p.nome; $("p-preco").value = p.preco.toFixed(2).replace(".", ",");
-  $("p-botao").textContent = "Salvar alteração"; $("p-cancelar").style.display = "block";
-  $("form-produto").scrollIntoView({ behavior: "smooth" });
-}
-function limparProduto() {
-  editProduto = null; ["p-nome","p-preco"].forEach(i => $(i).value = "");
-  $("p-botao").textContent = "Cadastrar produto"; $("p-cancelar").style.display = "none";
-}
-$("p-cancelar").onclick = limparProduto;
-async function apagarProduto(id) {
-  if (!await perguntar("Apagar este produto? (o que já foi anotado continua)")) return;
-  D.produtos = D.produtos.filter(p => p.id !== id);
-  salvar(); desenhar();
-}
-
 function desenharCadastro() {
   $("lista-clientes").innerHTML = D.clientes.length
     ? [...D.clientes].sort(porNome).map(c => `
@@ -604,16 +628,6 @@ function desenharCadastro() {
       </div>`).join("")
     : `<div class="vazio">Nenhum cliente cadastrado.</div>`;
 
-  $("lista-produtos").innerHTML = D.produtos.length
-    ? [...D.produtos].sort(porNome).map(p => `
-      <div class="item">
-        <div>${esc(p.nome)}<small>${reais(p.preco)}</small></div>
-        <div class="acoes">
-          <button class="botao pequeno contorno" onclick="editarProduto(${p.id})">✏️</button>
-          <button class="botao pequeno cinza" onclick="apagarProduto(${p.id})">✕</button>
-        </div>
-      </div>`).join("")
-    : `<div class="vazio">Nenhum produto cadastrado.</div>`;
 }
 
 /* =========================================================
@@ -638,10 +652,7 @@ function numeroWhats(c) {
 
 function linkWhats(c, itens, total) {
   const numero = numeroWhats(c);
-  const linhas = porDia(itens).map(d =>
-    `*${curto(d.data)} (${semana(d.data)})*\n` +
-    d.itens.map(a => `• ${a.produto} - ${reais(a.valor)}`).join("\n")
-  ).join("\n\n");
+  const linhas = porDia(itens).map(d => `• ${curto(d.data)} (${semana(d.data)}) — ${reais(d.total)}`).join("\n");
   const msg =
 `Olá, ${c.nome}! Aqui é o Leo. ☕
 Segue o resumo da sua conta:
@@ -693,11 +704,13 @@ Obrigado pela preferência!`;
   return abrirJanela("", { extra, sim: "", nao: "Fechar" });
 }
 
+const tituloDoDia = s => `${nomeDia(s)}${diasAtras(s) < 2 ? `, ${curto(s)}` : ""}`;
+
 // "desde 02/10 · há 3 dias · 4 itens" (fica vermelho depois de 30 dias)
 function desde(data, qtd) {
   const n = diasAtras(data);
   const quando = n === 0 ? "hoje" : n === 1 ? "ontem" : `há ${n} dias`;
-  return `<div class="desde ${n >= 30 ? "antigo" : ""}">desde ${curto(data)} · ${quando}<br>${qtd} ${qtd === 1 ? "item" : "itens"}</div>`;
+  return `<div class="desde ${n >= 30 ? "antigo" : ""}">desde ${curto(data)} · ${quando}<br>${qtd} ${qtd === 1 ? "anotação" : "anotações"}</div>`;
 }
 
 /* ----- Relatório ----- */
@@ -758,10 +771,10 @@ function baixarPlanilha() {
   const lista = doPeriodo();
   const num = v => v.toFixed(2).replace(".", ",");
   const campo = t => `"${String(t ?? "").replace(/"/g, '""')}"`;
-  const linhas = [["Data", "Dia", "Cliente", "Empresa", "Produto", "Valor (R$)", "Situação", "Pago em"]];
+  const linhas = [["Data", "Dia", "Hora", "Cliente", "Empresa", "Valor (R$)", "Situação", "Pago em"]];
   lista.forEach(a => {
     const c = cliente(a.clienteId) || {};
-    linhas.push([dataBR(a.data), semana(a.data), c.nome || "(apagado)", c.empresa || "", a.produto,
+    linhas.push([dataBR(a.data), semana(a.data), a.hora || "", c.nome || "(apagado)", c.empresa || "",
                  num(a.valor), a.pago ? "Pago" : "Em aberto", a.pagoEm ? dataBR(a.pagoEm) : ""]);
   });
   const soma = arr => arr.reduce((s, a) => s + a.valor, 0);
@@ -802,12 +815,19 @@ function desenharDeve() {
             ${desde(itens[0].data, itens.length)}
           </div>
         </summary>
-        ${porDia(itens).map(d => `
-          <div class="dia-titulo"><span>📅 ${nomeDia(d.data)}${diasAtras(d.data) < 2 ? `, ${curto(d.data)}` : ""}</span><span>${reais(d.total)}</span></div>
+        ${porDia(itens).map(d => d.itens.length === 1 ? `
+          <div class="item">
+            <div><b>📅 ${tituloDoDia(d.data)}</b>${d.itens[0].hora ? `<small>às ${d.itens[0].hora}</small>` : ""}</div>
+            <div class="acoes">
+              <span class="valor">${reais(d.total)}</span>
+              <button class="botao pequeno verde" onclick="receberItem(${d.itens[0].id})">Recebi</button>
+            </div>
+          </div>` : `
+          <div class="dia-titulo"><span>📅 ${tituloDoDia(d.data)}</span><span>${reais(d.total)}</span></div>
           <div class="dia-itens">
             ${d.itens.map(a => `
               <div class="item">
-                <div>${esc(a.produto)}</div>
+                <div>${rotulo(a)}</div>
                 <div class="acoes">
                   <span class="valor">${reais(a.valor)}</span>
                   <button class="botao pequeno verde" onclick="receberItem(${a.id})">Recebi</button>
@@ -885,14 +905,15 @@ $("arquivo-backup").onchange = async e => {
   try {
     const lido = JSON.parse(await arq.text());
     dados = lido.dados || lido;
-    if (!Array.isArray(dados.clientes) || !Array.isArray(dados.produtos) || !Array.isArray(dados.anotacoes)) throw 0;
+    if (!Array.isArray(dados.clientes) || !Array.isArray(dados.anotacoes)) throw 0;
+    dados.produtos = dados.produtos || [];
   } catch {
     avisar("Esse arquivo não é um backup do Fiado do Leo.");
     return;
   }
   const quando = dados.ultimoBackup ? dataBR(dados.ultimoBackup) : "data desconhecida";
   const ok = await perguntar(
-    `Restaurar o backup de ${quando}?\n\n${dados.clientes.length} clientes, ${dados.produtos.length} produtos e ${dados.anotacoes.length} anotações.\n\n⚠️ Os dados de agora serão trocados pelos do backup.`);
+    `Restaurar o backup de ${quando}?\n\n${dados.clientes.length} clientes e ${dados.anotacoes.length} anotações.\n\n⚠️ Os dados de agora serão trocados pelos do backup.`);
   if (!ok) return;
   D = dados;
   salvar(); clienteSel = null; desenhar();
