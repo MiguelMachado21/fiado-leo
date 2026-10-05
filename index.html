@@ -1,0 +1,927 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fiado do Leo</title>
+<meta name="theme-color" content="#8a4b1f">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Fiado do Leo">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%238a4b1f'/><text x='50' y='70' font-size='58' text-anchor='middle'>☕</text></svg>">
+<style>
+  /* ===== CORES E TAMANHOS (mude aqui) ===== */
+  :root {
+    --fundo: #f7f3ee;
+    --cartao: #ffffff;
+    --texto: #1f1b16;
+    --suave: #6b6259;
+    --marca: #8a4b1f;      /* marrom café */
+    --marca-claro: #f3e6db;
+    --verde: #1f7a3d;      /* receber / WhatsApp */
+    --vermelho: #b3261e;   /* valores devidos */
+    --cinza: #8c857e;
+    --borda: #e2d9cf;
+    --raio: 14px;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--fundo); color: var(--texto);
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    font-size: 20px; line-height: 1.4;
+  }
+  header { background: var(--marca); color: #fff; padding: 14px 16px; text-align: center; }
+  header h1 { margin: 0; font-size: 26px; }
+  header .hoje { font-size: 18px; opacity: .9; margin-top: 2px; }
+  main { max-width: 700px; margin: 0 auto; padding: 16px 16px 120px; }
+
+  /* ===== ABAS (fixas embaixo) ===== */
+  nav {
+    position: fixed; bottom: 0; left: 0; right: 0; display: flex; z-index: 5;
+    background: var(--cartao); border-top: 2px solid var(--borda);
+  }
+  nav button {
+    flex: 1; padding: 14px 4px; font-size: 18px; font-weight: 700;
+    background: none; border: none; color: var(--suave); cursor: pointer;
+  }
+  nav button span { display: block; font-size: 26px; }
+  nav button.ativa { color: var(--marca); box-shadow: inset 0 5px 0 var(--marca); }
+  .aba { display: none; }
+  .aba.ativa { display: block; }
+
+  /* ===== BASE ===== */
+  .cartao {
+    background: var(--cartao); border: 1px solid var(--borda);
+    border-radius: var(--raio); padding: 16px; margin-bottom: 14px;
+  }
+  h2 { font-size: 22px; margin: 22px 0 10px; }
+  label { display: block; font-weight: 700; margin: 12px 0 6px; }
+  label small { font-weight: 400; color: var(--suave); }
+  input {
+    width: 100%; font-size: 22px; padding: 14px; border-radius: 10px;
+    border: 2px solid var(--borda); background: #fff; color: var(--texto);
+  }
+  input:focus { outline: none; border-color: var(--marca); }
+  .botao {
+    display: block; width: 100%; margin-top: 16px; padding: 16px; font-size: 21px; font-weight: 700;
+    border: none; border-radius: var(--raio); background: var(--marca); color: #fff; cursor: pointer;
+    text-align: center; text-decoration: none;
+  }
+  .botao.verde { background: var(--verde); }
+  .botao.cinza { background: var(--cinza); }
+  .botao.contorno { background: #fff; color: var(--marca); border: 2px solid var(--marca); }
+  .botao.pequeno { display: inline-block; width: auto; margin: 0; padding: 10px 14px; font-size: 17px; }
+  .linha-botoes { display: flex; gap: 10px; }
+  .linha-botoes .botao { flex: 1; }
+  .vazio { text-align: center; color: var(--suave); padding: 20px 0; }
+  .valor { font-weight: 800; color: var(--vermelho); white-space: nowrap; }
+
+  /* ===== GRADES DE BOTÕES (clientes e produtos) ===== */
+  .grade { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+  .opcao {
+    background: var(--cartao); border: 2px solid var(--borda); border-radius: var(--raio);
+    padding: 16px 10px; font-size: 20px; font-weight: 700; color: var(--texto);
+    cursor: pointer; text-align: center; min-height: 86px;
+  }
+  .opcao small { display: block; font-weight: 400; font-size: 16px; color: var(--suave); }
+  .opcao .preco { display: block; color: var(--marca); font-size: 19px; margin-top: 4px; }
+  .opcao:active { background: var(--marca-claro); border-color: var(--marca); }
+  .opcao.outro { border-style: dashed; color: var(--suave); }
+
+  .cliente-escolhido {
+    display: flex; justify-content: space-between; align-items: center; gap: 10px;
+    background: var(--marca-claro); border: 2px solid var(--marca);
+  }
+  .cliente-escolhido .nome { font-size: 24px; font-weight: 800; }
+
+  /* ===== LISTAS ===== */
+  .item {
+    display: flex; justify-content: space-between; align-items: center; gap: 10px;
+    padding: 12px 0; border-top: 1px solid var(--borda); font-size: 18px;
+  }
+  .item:first-child { border-top: none; }
+  .item small { color: var(--suave); display: block; }
+  .acoes { display: flex; gap: 8px; align-items: center; }
+  .total-geral { text-align: center; }
+  .total-geral .numero { font-size: 36px; font-weight: 800; color: var(--vermelho); }
+  .pessoa summary {
+    list-style: none; cursor: pointer; display: flex; justify-content: space-between;
+    align-items: center; gap: 10px;
+  }
+  .pessoa summary::-webkit-details-marker { display: none; }
+  .pessoa .nome { font-weight: 700; font-size: 22px; }
+  .pessoa .empresa { color: var(--suave); font-size: 17px; }
+  .pessoa[open] summary { margin-bottom: 8px; }
+
+  /* ===== FAIXA DO DIA (aba Anotar) ===== */
+  .faixa-data {
+    display: flex; justify-content: space-between; align-items: center; gap: 10px;
+    padding: 12px 14px; font-size: 20px;
+  }
+  .faixa-data b { font-size: 21px; }
+  .faixa-data.passado { background: #fff4c2; border: 2px solid #d9a400; }
+  .faixa-data .voltar { display: block; font-size: 16px; color: var(--marca); text-decoration: underline;
+    background: none; border: none; padding: 4px 0 0; cursor: pointer; }
+
+  /* ===== QUEM DEVE: dias ===== */
+  .desde { font-size: 16px; color: var(--suave); }
+  .desde.antigo { color: var(--vermelho); font-weight: 700; }
+  .dia-titulo {
+    display: flex; justify-content: space-between; margin-top: 10px; padding: 8px 10px;
+    background: var(--marca-claro); border-radius: 8px; font-size: 17px; font-weight: 700;
+  }
+  .dia-titulo span:last-child { color: var(--marca); }
+  .dia-itens .item { padding-left: 10px; }
+  .dia-itens .item:first-child { border-top: none; }
+
+  /* ===== BACKUP ===== */
+  .faixa-backup {
+    display: flex; justify-content: space-between; align-items: center; gap: 10px;
+    background: #fde8e6; border: 2px solid var(--vermelho); font-size: 19px;
+  }
+  .backup-status { font-size: 19px; margin-bottom: 4px; }
+  .backup-status b.ok { color: var(--verde); }
+  .backup-status b.atrasado { color: var(--vermelho); }
+  .dica { font-size: 16px; color: var(--suave); margin-top: 12px; }
+
+  /* ===== QUITADO ===== */
+  .selo-quitado {
+    text-align: center; font-size: 38px; font-weight: 900; color: var(--verde);
+    border: 4px solid var(--verde); border-radius: var(--raio); padding: 10px; margin: 6px 0 14px;
+    letter-spacing: 2px;
+  }
+  .quitado-info { text-align: center; font-size: 20px; }
+  .quitado-info b { font-size: 26px; color: var(--verde); }
+
+  /* ===== RELATÓRIO ===== */
+  .periodos { display: flex; gap: 8px; margin-bottom: 14px; }
+  .periodos button {
+    flex: 1; padding: 12px 4px; font-size: 17px; font-weight: 700; border-radius: 10px; cursor: pointer;
+    background: var(--cartao); border: 2px solid var(--borda); color: var(--texto);
+  }
+  .periodos button.ativo { background: var(--marca); border-color: var(--marca); color: #fff; }
+  .numeros { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+  .numeros .cartao { margin: 0; text-align: center; padding: 12px 8px; }
+  .numeros .cartao:first-child { grid-column: 1 / -1; }
+  .numeros small { display: block; font-size: 16px; color: var(--suave); }
+  .numeros b { font-size: 24px; }
+  .tabela { width: 100%; border-collapse: collapse; font-size: 17px; }
+  .tabela th { text-align: left; color: var(--suave); font-weight: 600; font-size: 15px; padding: 6px 4px; }
+  .tabela td { padding: 10px 4px; border-top: 1px solid var(--borda); }
+  .tabela td:not(:first-child), .tabela th:not(:first-child) { text-align: right; white-space: nowrap; }
+
+  /* ===== AVISO "ANOTADO" ===== */
+  #aviso {
+    position: fixed; left: 16px; right: 16px; bottom: 100px; z-index: 10;
+    max-width: 660px; margin: 0 auto; display: none;
+    background: var(--verde); color: #fff; border-radius: var(--raio);
+    padding: 14px 16px; font-size: 19px; font-weight: 700;
+    justify-content: space-between; align-items: center; gap: 10px;
+    box-shadow: 0 6px 20px rgba(0,0,0,.2);
+  }
+  #aviso button {
+    background: #fff; color: var(--verde); border: none; border-radius: 10px;
+    padding: 10px 14px; font-size: 17px; font-weight: 800; cursor: pointer;
+  }
+
+  /* ===== JANELA PRÓPRIA ===== */
+  #janela-fundo {
+    position: fixed; inset: 0; z-index: 20; display: none;
+    background: rgba(0,0,0,.45); align-items: center; justify-content: center; padding: 16px;
+  }
+  #janela {
+    background: var(--cartao); border-radius: var(--raio); padding: 22px;
+    width: 100%; max-width: 420px; box-shadow: 0 10px 30px rgba(0,0,0,.3);
+  }
+  #janela-texto { font-size: 22px; font-weight: 700; margin-bottom: 6px; white-space: pre-line; }
+  #janela-campo { margin-top: 10px; display: none; }
+  #janela-extra:empty { display: none; }
+  #janela-extra .grade { grid-template-columns: 1fr 1fr; margin: 12px 0 4px; }
+  #janela-extra .opcao { min-height: 64px; padding: 10px 6px; font-size: 19px; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>☕ Fiado do Leo</h1>
+  <div class="hoje" id="hoje"></div>
+</header>
+
+<main>
+  <!-- ===== ABA 1: ANOTAR ===== -->
+  <section id="aba-anotar" class="aba ativa"></section>
+
+  <!-- ===== ABA 2: CADASTRO ===== -->
+  <section id="aba-cadastro" class="aba">
+    <h2>👤 Clientes</h2>
+    <div class="cartao" id="form-cliente">
+      <label for="c-nome">Nome</label>
+      <input id="c-nome" autocomplete="off" required>
+      <label for="c-empresa">Empresa <small>(se tiver)</small></label>
+      <input id="c-empresa" autocomplete="off">
+      <label for="c-whats">WhatsApp <small>(com DDD)</small></label>
+      <input id="c-whats" inputmode="tel" placeholder="51 99999-9999" autocomplete="off">
+      <button class="botao" type="button" id="c-botao">Cadastrar cliente</button>
+      <button class="botao cinza" type="button" id="c-cancelar" style="display:none">Cancelar</button>
+    </div>
+    <div class="cartao" id="lista-clientes"></div>
+
+    <h2>🍽️ Produtos</h2>
+    <div class="cartao" id="form-produto">
+      <label for="p-nome">Produto</label>
+      <input id="p-nome" autocomplete="off" placeholder="Ex.: Café" required>
+      <label for="p-preco">Preço (R$)</label>
+      <input id="p-preco" inputmode="decimal" placeholder="0,00" required>
+      <button class="botao" type="button" id="p-botao">Cadastrar produto</button>
+      <button class="botao cinza" type="button" id="p-cancelar" style="display:none">Cancelar</button>
+    </div>
+    <div class="cartao" id="lista-produtos"></div>
+
+    <h2>💾 Backup</h2>
+    <div class="cartao" id="backup"></div>
+    <input type="file" id="arquivo-backup" accept=".json,application/json" style="display:none">
+  </section>
+
+  <!-- ===== ABA 3: QUEM DEVE ===== -->
+  <section id="aba-deve" class="aba">
+    <div id="deve-lista">
+      <div class="cartao total-geral">
+        <div>Total a receber</div>
+        <div class="numero" id="total-geral">R$ 0,00</div>
+      </div>
+      <div id="pessoas"></div>
+      <button class="botao contorno" onclick="abrirRelatorio()">📊 Relatório e planilha</button>
+    </div>
+    <div id="relatorio" style="display:none"></div>
+  </section>
+</main>
+
+<!-- Janela própria (perguntas, avisos e digitar valor) -->
+<div id="janela-fundo">
+  <div id="janela">
+    <div id="janela-texto"></div>
+    <div id="janela-extra"></div>
+    <input id="janela-campo" autocomplete="off">
+    <div class="linha-botoes">
+      <button class="botao cinza" id="janela-nao">Cancelar</button>
+      <button class="botao verde" id="janela-sim">Sim</button>
+    </div>
+  </div>
+</div>
+
+<div id="aviso"><span id="aviso-texto"></span><button id="aviso-desfazer">Desfazer</button></div>
+
+<nav>
+  <button class="ativa" data-aba="anotar"><span>✏️</span>Anotar</button>
+  <button data-aba="cadastro"><span>📇</span>Cadastro</button>
+  <button data-aba="deve"><span>📋</span>Quem deve</button>
+</nav>
+
+<script>
+/* =========================================================
+   DADOS — ficam salvos no próprio aparelho
+   ========================================================= */
+const CHAVE = "fiado-leo-v2";
+let D = carregar();   // { clientes: [], produtos: [], anotacoes: [] }
+
+function carregar() {
+  try {
+    const d = JSON.parse(localStorage.getItem(CHAVE));
+    if (d && d.clientes) return d;
+  } catch {}
+  return { clientes: [], produtos: [], anotacoes: [] };
+}
+function salvar() {
+  try { localStorage.setItem(CHAVE, JSON.stringify(D)); }
+  catch {}
+}
+
+/* =========================================================
+   AJUDANTES
+   ========================================================= */
+const $ = id => document.getElementById(id);
+const reais = v => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+const dataBR = d => d.split("-").reverse().join("/");
+const paraData = s => { const [a, m, d] = s.split("-"); return new Date(a, m - 1, d); };   // sem erro de fuso
+const somarDias = (s, n) => { const d = paraData(s); d.setDate(d.getDate() + n); return d.toLocaleDateString("en-CA"); };
+const diasAtras = s => Math.round((paraData(hoje()) - paraData(s)) / 86400000);
+const semana = s => paraData(s).toLocaleDateString("pt-BR", { weekday: "long" }).replace("-feira", "");
+const curto = s => dataBR(s).slice(0, 5);                         // 02/10
+function nomeDia(s) {                                             // "Hoje", "Ontem", "sexta, 02/10"
+  const n = diasAtras(s);
+  if (n === 0) return "Hoje";
+  if (n === 1) return "Ontem";
+  return `${semana(s)}, ${curto(s)}`;
+}
+const hoje = () => new Date().toLocaleDateString("en-CA");   // AAAA-MM-DD
+const novoId = () => Date.now() + Math.floor(Math.random() * 1000);
+const lerValor = t => parseFloat(String(t).replace(/[^\d,.-]/g, "").replace(/\.(?=\d{3})/g, "").replace(",", "."));
+const esc = t => String(t ?? "").replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+const cliente = id => D.clientes.find(c => c.id === id);
+const pendentesDe = id => D.anotacoes.filter(a => a.clienteId === id && !a.pago);
+const porNome = (a, b) => a.nome.localeCompare(b.nome, "pt-BR");
+
+// Data de hoje por extenso no topo
+const txtHoje = new Date().toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long" });
+$("hoje").textContent = "📅 Hoje, " + txtHoje;
+
+/* =========================================================
+   JANELA PRÓPRIA — substitui alert/confirm/prompt
+   ========================================================= */
+function abrirJanela(texto, { campo = false, tipo = "text", sim = "Sim", nao = "Cancelar", extra = "" } = {}) {
+  return new Promise(resolve => {
+    $("janela-texto").textContent = texto;
+    $("janela-extra").innerHTML = extra;
+    $("janela-sim").style.display = sim ? "block" : "none";
+    const c = $("janela-campo");
+    c.style.display = campo ? "block" : "none";
+    c.value = ""; c.inputMode = tipo;
+    $("janela-sim").textContent = sim;
+    $("janela-nao").textContent = nao;
+    $("janela-nao").style.display = nao ? "block" : "none";
+    $("janela-fundo").style.display = "flex";
+    if (campo) setTimeout(() => c.focus(), 50);
+    const fechar = r => {
+      $("janela-fundo").style.display = "none";
+      $("janela-extra").innerHTML = "";
+      $("janela-sim").onclick = $("janela-nao").onclick = c.onkeydown = null;
+      resolve(r);
+    };
+    $("janela-sim").onclick = () => fechar(campo ? c.value : true);
+    $("janela-nao").onclick = () => fechar(campo ? null : false);
+    c.onkeydown = e => { if (e.key === "Enter") fechar(c.value); };
+    // botões dentro do conteúdo extra devolvem o próprio valor
+    $("janela-extra").querySelectorAll("[data-valor]").forEach(b =>
+      b.onclick = () => fechar(b.dataset.valor === "#campo" ? $("janela-outra-data").value || null : b.dataset.valor));
+  });
+}
+const perguntar = t => abrirJanela(t);
+const pedirTexto = (t, tipo) => abrirJanela(t, { campo: true, tipo, sim: "OK" });
+const avisar = t => abrirJanela(t, { sim: "Entendi", nao: "" });
+
+/* =========================================================
+   ABAS
+   ========================================================= */
+function irPara(aba) {
+  document.querySelectorAll("nav button, .aba").forEach(el => el.classList.remove("ativa"));
+  document.querySelector(`nav button[data-aba="${aba}"]`).classList.add("ativa");
+  $("aba-" + aba).classList.add("ativa");
+  $("aviso").style.display = "none";   // esconde a faixa verde ao trocar de aba
+  fecharRelatorio();
+  window.scrollTo(0, 0);
+  desenhar();
+}
+document.querySelectorAll("nav button").forEach(b => b.onclick = () => irPara(b.dataset.aba));
+
+/* =========================================================
+   ABA ANOTAR — toca no cliente, toca no produto
+   ========================================================= */
+let clienteSel = null;
+let busca = "";
+let diaSel = hoje();   // sempre começa no dia de hoje
+
+function faixaDia() {
+  const passado = diaSel !== hoje();
+  return `
+    <div class="cartao faixa-data ${passado ? "passado" : ""}">
+      <div>
+        ${passado ? "⚠️ Anotando em:" : "📅 Anotando em:"} <b>${nomeDia(diaSel)}${passado ? "" : ` (${curto(diaSel)})`}</b>
+        ${passado ? `<button class="voltar" onclick="voltarHoje()">Voltar para hoje</button>` : ""}
+      </div>
+      <button class="botao pequeno contorno" onclick="mudarDia()">Mudar dia</button>
+    </div>`;
+}
+
+async function mudarDia() {
+  const ops = [1, 2, 3, 4, 5, 6].map(n => somarDias(hoje(), -n));
+  const extra = `
+    <div class="grade">
+      <button class="opcao" data-valor="${hoje()}">Hoje<small>${curto(hoje())}</small></button>
+      ${ops.map(d => `<button class="opcao" data-valor="${d}">${nomeDia(d).split(",")[0]}<small>${curto(d)}</small></button>`).join("")}
+    </div>
+    <label for="janela-outra-data">Outra data</label>
+    <div class="linha-botoes" style="align-items:center">
+      <input id="janela-outra-data" type="date" max="${hoje()}" style="flex:1">
+      <button class="botao pequeno" data-valor="#campo">Usar</button>
+    </div>`;
+  const r = await abrirJanela("Qual dia você quer anotar?", { sim: "", nao: "Cancelar", extra });
+  if (!r) return;
+  if (r > hoje()) { avisar("Não dá para anotar em um dia que ainda não chegou."); return; }
+  diaSel = r;
+  desenharAnotar();
+}
+function voltarHoje() { diaSel = hoje(); desenharAnotar(); }
+
+function desenharAnotar() {
+  const el = $("aba-anotar");
+
+  if (!D.clientes.length || !D.produtos.length) {
+    el.innerHTML = `
+      <div class="cartao vazio">
+        Para começar, cadastre os <b>clientes</b> e os <b>produtos</b>.
+        <button class="botao" onclick="irPara('cadastro')">Ir para Cadastro</button>
+      </div>`;
+    return;
+  }
+
+  // Passo 1: escolher o cliente
+  if (!clienteSel) {
+    const lista = D.clientes
+      .filter(c => (c.nome + " " + c.empresa).toLowerCase().includes(busca.toLowerCase()))
+      .sort(porNome);
+    el.innerHTML = faixaBackup() + faixaDia() + `
+      <h2>1. Quem está consumindo?</h2>
+      ${D.clientes.length > 8 ? `<input id="busca" placeholder="🔎 Procurar cliente" value="${esc(busca)}" style="margin-bottom:12px">` : ""}
+      <div class="grade">
+        ${lista.map(c => `
+          <button class="opcao" onclick="escolherCliente(${c.id})">
+            ${esc(c.nome)}${c.empresa ? `<small>${esc(c.empresa)}</small>` : ""}
+          </button>`).join("") || `<div class="vazio">Nenhum cliente encontrado.</div>`}
+      </div>`;
+    const campo = $("busca");
+    if (campo) campo.oninput = e => {
+      busca = e.target.value;
+      desenharAnotar();
+      const novo = $("busca"); novo.focus(); novo.setSelectionRange(busca.length, busca.length);
+    };
+    return;
+  }
+
+  // Passo 2: escolher o produto
+  const c = cliente(clienteSel);
+  const doDia = D.anotacoes.filter(a => a.clienteId === c.id && a.data === diaSel).reverse();
+  const tituloDia = diaSel === hoje() ? "hoje" : `em ${curto(diaSel)}`;
+  const deve = pendentesDe(c.id).reduce((s, a) => s + a.valor, 0);
+
+  el.innerHTML = faixaDia() + `
+    <div class="cartao cliente-escolhido">
+      <div>
+        <div class="nome">${esc(c.nome)}</div>
+        ${c.empresa ? `<div style="color:var(--suave)">${esc(c.empresa)}</div>` : ""}
+        <div>Deve: <span class="valor">${reais(deve)}</span></div>
+      </div>
+      <button class="botao pequeno contorno" onclick="trocarCliente()">Trocar</button>
+    </div>
+
+    <h2>2. O que consumiu? <small style="font-weight:400;color:var(--suave)">(toque para anotar)</small></h2>
+    <div class="grade">
+      ${[...D.produtos].sort(porNome).map(p => `
+        <button class="opcao" onclick="anotar(${p.id})">
+          ${esc(p.nome)}<span class="preco">${reais(p.preco)}</span>
+        </button>`).join("")}
+      <button class="opcao outro" onclick="anotarOutro()">➕ Outro<span class="preco">digitar valor</span></button>
+    </div>
+
+    <button class="botao verde" onclick="trocarCliente()">✔ Pronto</button>
+
+    <h2>Anotado ${tituloDia} para ${esc(c.nome)}</h2>
+    <div class="cartao">
+      ${doDia.length ? doDia.map(a => `
+        <div class="item">
+          <div>${esc(a.produto)}${a.pago ? "<small>pago ✔</small>" : ""}</div>
+          <div class="acoes">
+            <span class="valor">${reais(a.valor)}</span>
+            <button class="botao pequeno cinza" onclick="apagarAnotacao(${a.id})">✕</button>
+          </div>
+        </div>`).join("") : `<div class="vazio">Nada anotado ${tituloDia}.</div>`}
+    </div>`;
+}
+
+function escolherCliente(id) { clienteSel = id; busca = ""; desenharAnotar(); window.scrollTo(0, 0); }
+function trocarCliente() { clienteSel = null; desenharAnotar(); window.scrollTo(0, 0); }
+
+function registrar(produto, valor) {
+  const a = { id: novoId(), clienteId: clienteSel, produto, valor, data: diaSel, pago: false };
+  D.anotacoes.push(a);
+  salvar();
+  mostrarAviso(`✔ ${produto} — ${reais(valor)}${diaSel !== hoje() ? ` (${curto(diaSel)})` : ""}`, () => {
+    D.anotacoes = D.anotacoes.filter(x => x.id !== a.id);
+    salvar(); desenhar();
+  });
+  desenhar();
+}
+function anotar(produtoId) {
+  const p = D.produtos.find(x => x.id === produtoId);
+  registrar(p.nome, p.preco);
+}
+async function anotarOutro() {
+  const nome = await pedirTexto("O que consumiu?");
+  if (!nome || !nome.trim()) return;
+  const valor = lerValor(await pedirTexto("Valor (R$):", "decimal") || "");
+  if (!(valor > 0)) { avisar("Valor inválido."); return; }
+  registrar(nome.trim(), valor);
+}
+async function apagarAnotacao(id) {
+  if (!await perguntar("Apagar esta anotação?")) return;
+  D.anotacoes = D.anotacoes.filter(a => a.id !== id);
+  salvar(); desenhar();
+}
+
+// Aviso verde com "Desfazer"
+let timerAviso, acaoDesfazer;
+function mostrarAviso(texto, desfazer) {
+  $("aviso-texto").textContent = texto;
+  acaoDesfazer = desfazer;
+  $("aviso").style.display = "flex";
+  clearTimeout(timerAviso);
+  timerAviso = setTimeout(() => $("aviso").style.display = "none", 4000);
+}
+$("aviso-desfazer").onclick = () => {
+  if (acaoDesfazer) acaoDesfazer();
+  $("aviso").style.display = "none";
+};
+
+/* =========================================================
+   ABA CADASTRO — clientes e produtos
+   ========================================================= */
+let editCliente = null, editProduto = null;
+
+$("c-botao").onclick = () => {
+  if (!$("c-nome").value.trim()) { avisar("Digite o nome do cliente."); return; }
+  const dados = {
+    nome: $("c-nome").value.trim(),
+    empresa: $("c-empresa").value.trim(),
+    whats: $("c-whats").value.trim()
+  };
+  if (editCliente) Object.assign(cliente(editCliente), dados);
+  else D.clientes.push({ id: novoId(), ...dados });
+  salvar(); limparCliente(); desenhar();
+};
+function editarCliente(id) {
+  const c = cliente(id); editCliente = id;
+  $("c-nome").value = c.nome; $("c-empresa").value = c.empresa; $("c-whats").value = c.whats;
+  $("c-botao").textContent = "Salvar alteração"; $("c-cancelar").style.display = "block";
+  $("form-cliente").scrollIntoView({ behavior: "smooth" });
+}
+function limparCliente() {
+  editCliente = null; ["c-nome","c-empresa","c-whats"].forEach(i => $(i).value = "");
+  $("c-botao").textContent = "Cadastrar cliente"; $("c-cancelar").style.display = "none";
+}
+$("c-cancelar").onclick = limparCliente;
+async function apagarCliente(id) {
+  if (pendentesDe(id).length) { avisar("Este cliente ainda tem valores em aberto. Receba antes de apagar."); return; }
+  if (!await perguntar(`Apagar ${cliente(id).nome}?`)) return;
+  D.clientes = D.clientes.filter(c => c.id !== id);
+  D.anotacoes = D.anotacoes.filter(a => a.clienteId !== id);
+  salvar(); desenhar();
+}
+
+$("p-botao").onclick = () => {
+  if (!$("p-nome").value.trim()) { avisar("Digite o nome do produto."); return; }
+  const preco = lerValor($("p-preco").value);
+  if (!(preco > 0)) { avisar("Confira o preço."); return; }
+  const dados = { nome: $("p-nome").value.trim(), preco };
+  if (editProduto) Object.assign(D.produtos.find(p => p.id === editProduto), dados);
+  else D.produtos.push({ id: novoId(), ...dados });
+  salvar(); limparProduto(); desenhar();
+};
+function editarProduto(id) {
+  const p = D.produtos.find(x => x.id === id); editProduto = id;
+  $("p-nome").value = p.nome; $("p-preco").value = p.preco.toFixed(2).replace(".", ",");
+  $("p-botao").textContent = "Salvar alteração"; $("p-cancelar").style.display = "block";
+  $("form-produto").scrollIntoView({ behavior: "smooth" });
+}
+function limparProduto() {
+  editProduto = null; ["p-nome","p-preco"].forEach(i => $(i).value = "");
+  $("p-botao").textContent = "Cadastrar produto"; $("p-cancelar").style.display = "none";
+}
+$("p-cancelar").onclick = limparProduto;
+async function apagarProduto(id) {
+  if (!await perguntar("Apagar este produto? (o que já foi anotado continua)")) return;
+  D.produtos = D.produtos.filter(p => p.id !== id);
+  salvar(); desenhar();
+}
+
+function desenharCadastro() {
+  $("lista-clientes").innerHTML = D.clientes.length
+    ? [...D.clientes].sort(porNome).map(c => `
+      <div class="item">
+        <div>${esc(c.nome)}<small>${[c.empresa, c.whats].filter(Boolean).map(esc).join(" · ") || "—"}</small></div>
+        <div class="acoes">
+          <button class="botao pequeno contorno" onclick="editarCliente(${c.id})">✏️</button>
+          <button class="botao pequeno cinza" onclick="apagarCliente(${c.id})">✕</button>
+        </div>
+      </div>`).join("")
+    : `<div class="vazio">Nenhum cliente cadastrado.</div>`;
+
+  $("lista-produtos").innerHTML = D.produtos.length
+    ? [...D.produtos].sort(porNome).map(p => `
+      <div class="item">
+        <div>${esc(p.nome)}<small>${reais(p.preco)}</small></div>
+        <div class="acoes">
+          <button class="botao pequeno contorno" onclick="editarProduto(${p.id})">✏️</button>
+          <button class="botao pequeno cinza" onclick="apagarProduto(${p.id})">✕</button>
+        </div>
+      </div>`).join("")
+    : `<div class="vazio">Nenhum produto cadastrado.</div>`;
+}
+
+/* =========================================================
+   ABA QUEM DEVE — resumo por cliente + cobrança no WhatsApp
+   ========================================================= */
+// Junta os itens por dia: [{ data, itens, total }]
+function porDia(itens) {
+  const dias = {};
+  itens.forEach(a => {
+    dias[a.data] = dias[a.data] || { data: a.data, itens: [], total: 0 };
+    dias[a.data].itens.push(a);
+    dias[a.data].total += a.valor;
+  });
+  return Object.values(dias).sort((x, y) => x.data.localeCompare(y.data));
+}
+
+function numeroWhats(c) {
+  let numero = (c.whats || "").replace(/\D/g, "");
+  if (numero.length === 10 || numero.length === 11) numero = "55" + numero;
+  return numero;
+}
+
+function linkWhats(c, itens, total) {
+  const numero = numeroWhats(c);
+  const linhas = porDia(itens).map(d =>
+    `*${curto(d.data)} (${semana(d.data)})*\n` +
+    d.itens.map(a => `• ${a.produto} - ${reais(a.valor)}`).join("\n")
+  ).join("\n\n");
+  const msg =
+`Olá, ${c.nome}! Aqui é o Leo. ☕
+Segue o resumo da sua conta:
+
+${linhas}
+
+*Total: ${reais(total)}*
+
+Obrigado pela preferência!`;
+  return `https://wa.me/${numero}?text=${encodeURIComponent(msg)}`;
+}
+
+async function receberItem(id) {
+  const a = D.anotacoes.find(x => x.id === id);
+  if (!await perguntar(`Recebeu ${reais(a.valor)} de ${cliente(a.clienteId).nome}?`)) return;
+  a.pago = true; a.pagoEm = hoje();
+  salvar(); desenhar();
+  if (!pendentesDe(a.clienteId).length) mostrarQuitado(a.clienteId);
+}
+async function receberTudo(clienteId) {
+  const itens = pendentesDe(clienteId);
+  const total = itens.reduce((s, a) => s + a.valor, 0);
+  if (!await perguntar(`Recebeu tudo de ${cliente(clienteId).nome}? Total: ${reais(total)}`)) return;
+  itens.forEach(a => { a.pago = true; a.pagoEm = hoje(); });
+  salvar(); desenhar();
+  mostrarQuitado(clienteId);
+}
+
+// Janela "QUITADO" + confirmação para o cliente no WhatsApp
+function mostrarQuitado(clienteId) {
+  const c = cliente(clienteId);
+  const pagosHoje = D.anotacoes.filter(a => a.clienteId === clienteId && a.pago && a.pagoEm === hoje());
+  const total = pagosHoje.reduce((s, a) => s + a.valor, 0);
+  const msg =
+`Olá, ${c.nome}! Aqui é o Leo. ☕
+
+Confirmo o recebimento de *${reais(total)}* hoje (${curto(hoje())}).
+
+✅ *Sua conta está QUITADA.*
+
+Obrigado pela preferência!`;
+  const extra = `
+    <div class="selo-quitado">✅ QUITADO</div>
+    <div class="quitado-info">${esc(c.nome)} pagou<br><b>${reais(total)}</b><br>e não deve mais nada.</div>
+    ${c.whats
+      ? `<a class="botao verde" target="_blank" data-valor="ok"
+           href="https://wa.me/${numeroWhats(c)}?text=${encodeURIComponent(msg)}">💬 Enviar confirmação no WhatsApp</a>`
+      : `<div class="vazio" style="padding:12px 0 0">Cliente sem WhatsApp cadastrado.</div>`}`;
+  return abrirJanela("", { extra, sim: "", nao: "Fechar" });
+}
+
+// "desde 02/10 · há 3 dias · 4 itens" (fica vermelho depois de 30 dias)
+function desde(data, qtd) {
+  const n = diasAtras(data);
+  const quando = n === 0 ? "hoje" : n === 1 ? "ontem" : `há ${n} dias`;
+  return `<div class="desde ${n >= 30 ? "antigo" : ""}">desde ${curto(data)} · ${quando}<br>${qtd} ${qtd === 1 ? "item" : "itens"}</div>`;
+}
+
+/* ----- Relatório ----- */
+let periodo = "mes";   // mes | passado | tudo
+function mesDe(s) { return s.slice(0, 7); }                       // "2026-10"
+function mesPassado() { const d = paraData(hoje()); d.setDate(1); d.setMonth(d.getMonth() - 1); return d.toLocaleDateString("en-CA").slice(0, 7); }
+function nomeMes(m) { const [a, mm] = m.split("-"); return new Date(a, mm - 1, 1).toLocaleDateString("pt-BR", { month: "long", year: "numeric" }); }
+function nomePeriodo() { return periodo === "mes" ? nomeMes(mesDe(hoje())) : periodo === "passado" ? nomeMes(mesPassado()) : "Todo o período"; }
+function doPeriodo() {
+  const alvo = periodo === "mes" ? mesDe(hoje()) : periodo === "passado" ? mesPassado() : null;
+  return D.anotacoes.filter(a => !alvo || mesDe(a.data) === alvo).sort((a, b) => a.data.localeCompare(b.data));
+}
+
+function abrirRelatorio() { $("deve-lista").style.display = "none"; $("relatorio").style.display = "block"; desenharRelatorio(); window.scrollTo(0, 0); }
+function fecharRelatorio() { $("relatorio").style.display = "none"; $("deve-lista").style.display = "block"; window.scrollTo(0, 0); }
+function mudarPeriodo(p) { periodo = p; desenharRelatorio(); }
+
+function desenharRelatorio() {
+  const lista = doPeriodo();
+  const soma = arr => arr.reduce((s, a) => s + a.valor, 0);
+  const anotado = soma(lista), recebido = soma(lista.filter(a => a.pago)), aberto = anotado - recebido;
+  const porCliente = {};
+  lista.forEach(a => {
+    const k = a.clienteId;
+    porCliente[k] = porCliente[k] || { nome: cliente(k)?.nome || "(apagado)", anotado: 0, aberto: 0 };
+    porCliente[k].anotado += a.valor;
+    if (!a.pago) porCliente[k].aberto += a.valor;
+  });
+  const linhas = Object.values(porCliente).sort((x, y) => y.anotado - x.anotado);
+
+  $("relatorio").innerHTML = `
+    <button class="botao pequeno contorno" onclick="fecharRelatorio()" style="margin-bottom:14px">← Voltar</button>
+    <h2 style="margin-top:0">📊 Relatório</h2>
+    <div class="periodos">
+      <button class="${periodo === "mes" ? "ativo" : ""}" onclick="mudarPeriodo('mes')">Este mês</button>
+      <button class="${periodo === "passado" ? "ativo" : ""}" onclick="mudarPeriodo('passado')">Mês passado</button>
+      <button class="${periodo === "tudo" ? "ativo" : ""}" onclick="mudarPeriodo('tudo')">Tudo</button>
+    </div>
+    <div style="text-align:center;color:var(--suave);margin-bottom:10px">${nomePeriodo().replace(/^./, l => l.toUpperCase())}</div>
+    <div class="numeros">
+      <div class="cartao"><small>Total anotado no fiado</small><b>${reais(anotado)}</b></div>
+      <div class="cartao"><small>Já recebido</small><b style="color:var(--verde)">${reais(recebido)}</b></div>
+      <div class="cartao"><small>Ainda em aberto</small><b style="color:var(--vermelho)">${reais(aberto)}</b></div>
+    </div>
+    <div class="cartao">
+      ${linhas.length ? `
+        <table class="tabela">
+          <tr><th>Cliente</th><th>Anotado</th><th>Em aberto</th></tr>
+          ${linhas.map(l => `<tr><td>${esc(l.nome)}</td><td>${reais(l.anotado)}</td>
+            <td>${l.aberto ? `<span class="valor">${reais(l.aberto)}</span>` : `<span style="color:var(--verde);font-weight:700">Quitado ✔</span>`}</td></tr>`).join("")}
+        </table>` : `<div class="vazio">Nada anotado neste período.</div>`}
+    </div>
+    <button class="botao verde" onclick="baixarPlanilha()" ${lista.length ? "" : "disabled style='opacity:.5'"}>⬇️ Baixar planilha (${lista.length} ${lista.length === 1 ? "lançamento" : "lançamentos"})</button>`;
+}
+
+// Planilha .csv (abre no Excel e no Google Planilhas)
+function baixarPlanilha() {
+  const lista = doPeriodo();
+  const num = v => v.toFixed(2).replace(".", ",");
+  const campo = t => `"${String(t ?? "").replace(/"/g, '""')}"`;
+  const linhas = [["Data", "Dia", "Cliente", "Empresa", "Produto", "Valor (R$)", "Situação", "Pago em"]];
+  lista.forEach(a => {
+    const c = cliente(a.clienteId) || {};
+    linhas.push([dataBR(a.data), semana(a.data), c.nome || "(apagado)", c.empresa || "", a.produto,
+                 num(a.valor), a.pago ? "Pago" : "Em aberto", a.pagoEm ? dataBR(a.pagoEm) : ""]);
+  });
+  const soma = arr => arr.reduce((s, a) => s + a.valor, 0);
+  linhas.push([]);
+  linhas.push(["Total anotado", "", "", "", "", num(soma(lista))]);
+  linhas.push(["Já recebido", "", "", "", "", num(soma(lista.filter(a => a.pago)))]);
+  linhas.push(["Em aberto", "", "", "", "", num(soma(lista.filter(a => !a.pago)))]);
+  const csv = "\uFEFF" + linhas.map(l => l.map(campo).join(";")).join("\r\n");
+  const nome = `fiado-leo-${periodo === "tudo" ? "completo" : (periodo === "mes" ? mesDe(hoje()) : mesPassado())}.csv`;
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
+  a.download = nome;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+}
+
+function desenharDeve() {
+  const grupos = D.clientes
+    .map(c => {
+      const itens = pendentesDe(c.id).sort((a, b) => a.data.localeCompare(b.data));
+      return { c, itens, total: itens.reduce((s, a) => s + a.valor, 0) };
+    })
+    .filter(g => g.itens.length)
+    .sort((a, b) => b.total - a.total);
+
+  $("total-geral").textContent = reais(grupos.reduce((s, g) => s + g.total, 0));
+
+  $("pessoas").innerHTML = grupos.length
+    ? grupos.map(({ c, itens, total }) => `
+      <details class="cartao pessoa">
+        <summary>
+          <div>
+            <div class="nome">${esc(c.nome)}</div>
+            ${c.empresa ? `<div class="empresa">${esc(c.empresa)}</div>` : ""}
+          </div>
+          <div style="text-align:right">
+            <div class="valor">${reais(total)}</div>
+            ${desde(itens[0].data, itens.length)}
+          </div>
+        </summary>
+        ${porDia(itens).map(d => `
+          <div class="dia-titulo"><span>📅 ${nomeDia(d.data)}${diasAtras(d.data) < 2 ? `, ${curto(d.data)}` : ""}</span><span>${reais(d.total)}</span></div>
+          <div class="dia-itens">
+            ${d.itens.map(a => `
+              <div class="item">
+                <div>${esc(a.produto)}</div>
+                <div class="acoes">
+                  <span class="valor">${reais(a.valor)}</span>
+                  <button class="botao pequeno verde" onclick="receberItem(${a.id})">Recebi</button>
+                </div>
+              </div>`).join("")}
+          </div>`).join("")}
+        <div style="height:12px"></div>
+        <div class="linha-botoes">
+          ${c.whats
+            ? `<a class="botao contorno" target="_blank" href="${linkWhats(c, itens, total)}">💬 Cobrar no WhatsApp</a>`
+            : `<button class="botao contorno" onclick="irPara('cadastro');editarCliente(${c.id})">💬 Falta WhatsApp</button>`}
+          <button class="botao verde" onclick="receberTudo(${c.id})">Recebi tudo</button>
+        </div>
+      </details>`).join("")
+    : `<div class="cartao vazio">Ninguém devendo. 🎉</div>`;
+}
+
+/* =========================================================
+   DESENHAR TUDO
+   ========================================================= */
+/* =========================================================
+   BACKUP — salvar e restaurar tudo num arquivo
+   ========================================================= */
+const DIAS_LEMBRETE = 7;
+const temDados = () => D.clientes.length || D.anotacoes.length;
+const diasSemBackup = () => D.ultimoBackup ? diasAtras(D.ultimoBackup) : null;
+const precisaBackup = () => temDados() && (diasSemBackup() === null || diasSemBackup() >= DIAS_LEMBRETE);
+
+function faixaBackup() {
+  if (!precisaBackup()) return "";
+  const n = diasSemBackup();
+  return `
+    <div class="cartao faixa-backup">
+      <div>💾 ${n === null ? "Você ainda não fez <b>backup</b>." : `Faz <b>${n} dias</b> sem backup.`}</div>
+      <button class="botao pequeno" onclick="fazerBackup()">Fazer agora</button>
+    </div>`;
+}
+
+async function fazerBackup() {
+  const pacote = { app: "fiado-leo", versao: 2, salvoEm: new Date().toISOString(), dados: { ...D, ultimoBackup: hoje() } };
+  const json = JSON.stringify(pacote);
+  const nome = `fiado-leo-backup-${hoje()}.json`;
+  let feito = false;
+
+  // No celular: tenta abrir "Compartilhar" (WhatsApp, e-mail, Drive...)
+  try {
+    const arq = new File([json], nome, { type: "application/json" });
+    if (navigator.canShare && navigator.canShare({ files: [arq] })) {
+      await navigator.share({ files: [arq], title: "Backup Fiado do Leo" });
+      feito = true;
+    }
+  } catch (e) {
+    if (e.name === "AbortError") return;   // ele cancelou: não marca como feito
+  }
+  // Senão: baixa o arquivo
+  if (!feito) {
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([json], { type: "application/json" }));
+    a.download = nome;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  }
+  D.ultimoBackup = hoje();
+  salvar(); desenhar();
+  avisar("✅ Backup feito!\n\nGuarde o arquivo num lugar seguro, fora do celular: mande para o seu WhatsApp, e-mail ou Google Drive.");
+}
+
+function restaurarBackup() { $("arquivo-backup").value = ""; $("arquivo-backup").click(); }
+
+$("arquivo-backup").onchange = async e => {
+  const arq = e.target.files[0];
+  e.target.value = "";   // permite escolher o mesmo arquivo de novo
+  if (!arq) return;
+  let dados;
+  try {
+    const lido = JSON.parse(await arq.text());
+    dados = lido.dados || lido;
+    if (!Array.isArray(dados.clientes) || !Array.isArray(dados.produtos) || !Array.isArray(dados.anotacoes)) throw 0;
+  } catch {
+    avisar("Esse arquivo não é um backup do Fiado do Leo.");
+    return;
+  }
+  const quando = dados.ultimoBackup ? dataBR(dados.ultimoBackup) : "data desconhecida";
+  const ok = await perguntar(
+    `Restaurar o backup de ${quando}?\n\n${dados.clientes.length} clientes, ${dados.produtos.length} produtos e ${dados.anotacoes.length} anotações.\n\n⚠️ Os dados de agora serão trocados pelos do backup.`);
+  if (!ok) return;
+  D = dados;
+  salvar(); clienteSel = null; desenhar();
+  avisar("✅ Backup restaurado!");
+};
+
+function desenharBackup() {
+  const n = diasSemBackup();
+  const status = n === null ? `<b class="atrasado">nunca</b>`
+    : n === 0 ? `<b class="ok">hoje ✔</b>`
+    : n === 1 ? `<b class="ok">ontem</b>`
+    : `<b class="${n >= DIAS_LEMBRETE ? "atrasado" : "ok"}">há ${n} dias</b> (${dataBR(D.ultimoBackup)})`;
+  $("backup").innerHTML = `
+    <div class="backup-status">Último backup: ${status}</div>
+    <button class="botao verde" onclick="fazerBackup()">💾 Salvar backup</button>
+    <button class="botao contorno" onclick="restaurarBackup()">📂 Restaurar backup</button>
+    <div class="dica">Faça backup toda semana. Se trocar de celular ou perder os dados, use "Restaurar backup" com o último arquivo salvo.</div>`;
+}
+
+// Pede ao navegador para não apagar os dados sozinho
+try { navigator.storage?.persist?.().catch(() => {}); } catch {}
+
+function desenhar() {
+  desenharAnotar();
+  desenharCadastro();
+  desenharDeve();
+  desenharBackup();
+}
+desenhar();
+</script>
+</body>
+</html>
